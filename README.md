@@ -1,29 +1,40 @@
 
-# Installer
-Installer helps you to automatically install and configure your system.
-### Prerequisites
-You must have some things before you can run this:
-- [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
-- [SBT](http://www.scala-sbt.org/download.html)
+# Initializr
+Initializr helps you to *automatically* install packages and configure your **system**.
+
+This project is written in [Crystal](https://crystal-lang.org) language.
 
 ## Installation
-You must have installed [Crystal](https://crystal-lang.org/) before start to using it:
-
-After got a working copy of the project, you should compile it:
+Ensure that you've [Crystal](https://crystal-lang.org/) installed before start to using it. Now, you should clone
+this project by using:
 ```sh
-shards build```
+git clone https://github.com/gpaulo00/initializr.git
+```
+
+Now, you are able to compile it with **shards**:
+```sh
+shards build
+```
 
 ## Usage
+You need to give a *YAML* file to **initializr**, then it'll show you the instructions.
 ```sh
-installer [file.yml]```
+initializr [script.yml]
+```
 
 ## Contributing
-
-1. Fork it ( https://github.com/gpaulo00/installer/fork )
+1. Fork it ( https://github.com/gpaulo00/initializr/fork )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
 5. Create a new Pull Request
 
+## Versioning
+I use [SemVer](http://semver.org/) for versioning.
+For the versions available, see the tags on this repository.
+
 ## Contributors
-- [[gpaulo00]](https://github.com/gpaulo00) Gustavo Paulo - creator, maintainer
+- [gpaulo00](https://github.com/gpaulo00) Gustavo Paulo - creator, maintainer
+
+## License
+This project is licensed under the **MIT** License - see the [LICENSE](LICENSE) file for details

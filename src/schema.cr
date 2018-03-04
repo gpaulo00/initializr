@@ -45,7 +45,7 @@ struct Package
 end
 
 # Describes the complete *instruction set* of a **installer file**.
-struct Installer
+struct Script
   include YAMLHelper
   property version, author, system, dependencies, packages
 
@@ -58,7 +58,7 @@ struct Installer
   )
   end
 
-  # Reads data from *YAML* input, and puts it into the **Installer**.
+  # Reads data from *YAML* input, and puts it into the **Script**.
   def read(input : String | IO)
     parse = YAML.parse(input)
     parse.each do |key, value|
@@ -81,18 +81,31 @@ struct Installer
     end
   end
 
-  # Builds an instance of **Installer** from *YAML* input.
+  # Print info about this script
+  def print
+    puts "ver.:\t#{@version}" unless @version.nil?
+    puts "author:\t#{@author}" unless @author.nil?
+    puts "system:\t#{@system}" unless @system.nil?
+  end
+
+  # Print the list of packages written in the script
+  def print_packages
+    total = @packages.size.to_s.size
+    @packages.each_with_index do |pkg, i|
+      puts "#{(i + 1).to_s.rjust(total, '0')}) #{pkg.name}\t- #{pkg.description}"
+    end
+  end
+
+  # Builds an instance of **Script** from *YAML* input.
   #
   # ```
   # name = "file.yml"
-  # Installer.read(File.open(name)) # => Installer instance
-  # Installer.read(File.read(name)) # => Installer instance
+  # Script.read(File.open(name)) # => Script instance
+  # Script.read(File.read(name)) # => Script instance
   # ```
   def self.read(input : String | IO)
-    out = Installer.new
+    out = Script.new
     out.read(input)
     out
   end
 end
-
-puts Installer.read(File.read("./test.yml"))

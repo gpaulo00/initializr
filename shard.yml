@@ -1,4 +1,4 @@
-name: installer
+name: initializr
 version: 0.1.0
 
 authors:
@@ -9,8 +9,8 @@ description: |
   configure the system.
 
 targets:
-  installer:
-    main: src/installer.cr
+  initializr:
+    main: src/initializr.cr
 
 crystal: 0.24.1
 
