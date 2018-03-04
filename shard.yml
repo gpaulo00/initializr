@@ -1,0 +1,17 @@
+name: installer
+version: 0.1.0
+
+authors:
+  - Gustavo Paulo <gustavo.paulo.segura@gmail.com>
+
+description: |
+  Portable method to install your packages, and
+  configure the system.
+
+targets:
+  installer:
+    main: src/installer.cr
+
+crystal: 0.24.1
+
+license: MIT

@@ -1,0 +1,6 @@
+
+# default crystal
+/doc/
+/lib/
+/bin/
+/.shards/

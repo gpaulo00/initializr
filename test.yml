@@ -1,0 +1,28 @@
+
+version: "1.0"
+author: Gustavo Paulo <gustavo.paulo.segura@gmail.com>
+system: Ubuntu GNU/Linux
+
+dependencies:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - wget
+  - ruby
+  - git
+
+packages:
+  fancy-shell:
+    description: customize the linux terminal
+    dependencies:
+      - aria2
+      - zsh
+    configure:
+      - echo "configuring..."
+    preinstall:
+      - echo "preinstall..."
+    update: true
+    install:
+      - sublime-text
+    build:
+      - { type: "git", url: "https://github.com/aanarchyy/bully" }
