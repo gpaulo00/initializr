@@ -12,6 +12,10 @@ targets:
   initializr:
     main: src/initializr.cr
 
+dependencies:
+  admiral:
+    github: jwaldrip/admiral.cr
+
 crystal: 0.24.1
 
 license: MIT

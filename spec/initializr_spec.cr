@@ -1,7 +1,7 @@
 require "spec"
-require "../src/installer.cr"
+require "../src/initializr.cr"
 
-describe Installer do
+describe Initializr do
   it "works" do
     true.should eq(true)
   end

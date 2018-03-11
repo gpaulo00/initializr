@@ -1,39 +1,47 @@
-require "./schema.cr"
+require "admiral"
+require "./schema"
+require "./managers/index"
 
 module Initializr
-  puts "initializr - bootstrap configs in your system"
+  Name    = "initializr"
+  Version = "0.1.0"
 
-  # Prints the help message
-  def self.help
-    puts <<-EOF
-it uses your own script (a YAML file) and lets to quickly configure your system.
+  class CLI < Admiral::Command
+    define_version Version
+    define_help description: "configure your system with a single command"
+    define_argument action : String,
+      description: "The action to execute"
+    define_flag input : String,
+      description: "The YAML configuration file",
+      short: i,
+      required: true
 
-Use: #{PROGRAM_NAME} [script.yml]
-EOF
-    exit 0
-  end
+    def run
+      puts "#{Name} v#{Version}"
 
-  # Prints an error and exit
-  def self.error(msg : String)
-    puts " [ERROR] #{msg}"
-    exit 1
-  end
+      # parse file
+      file = flags.input
+      unless File.exists? file
+        raise "cannot found the script '#{file}'"
+      end
+      root = Script.read(File.open(file))
+      puts "\nscript metadata:"
+      root.print
 
-  # main code
-  if ARGV.size < 1
-    help
-  else
-    # check if file exists
-    file = ARGV[0]
-    unless File.exists? file
-      error "cannot found the script '#{file}'"
+      # execute commands
+      case arguments.action
+      when "packages", .nil?
+        # print package list
+        puts "packages:"
+        root.print_packages
+      when "categories"
+        # print category list
+        puts "categories:"
+        root.print_categories
+      end
     end
-
-    # parse file
-    root = Script.read(File.open(file))
-    puts
-    root.print
-    puts "\nscript packages:"
-    root.print_packages
   end
 end
+
+# run the command line interface
+Initializr::CLI.run
