@@ -1,5 +1,6 @@
 require "yaml"
 require "../index"
+require "./managers/package"
 
 # This *namespace* defines the **initializr** schema.
 #
@@ -22,6 +23,18 @@ module Initializr::Schema
     getter name, packages
     @packages = [] of String
 
+    # Marks it to install.
+    def mark_install(ctx : Script)
+      @packages.each do |i|
+        ctx.packages.each do |pkg|
+          if pkg.name == i
+            pkg.mark_install ctx
+            break
+          end
+        end
+      end
+    end
+
     def initialize(@name : String)
     end
   end
@@ -31,6 +44,16 @@ module Initializr::Schema
   # This object contains the *package*, and which `PackageManager` should handle it.
   struct Installable
     getter name, manager
+
+    # Marks it to install.
+    #
+    # This is the most basic unit that can be installed, since it declares a
+    # single packages.
+    def mark_install(ctx : Script)
+      name = (manager.nil? ? ctx.packageManager : @manager).as(String)
+      mgr = Initializr::Managers::PackageManager.get name
+      mgr.install_list.push @name
+    end
 
     def initialize(
       @name : String,
@@ -48,12 +71,28 @@ module Initializr::Schema
     @dependencies = [] of String
     @install = [] of Installable
     @configure = [] of String
+    @preinstall = [] of String
 
     def initialize(
       @name : String,
       @description : String? = nil,
       @update : Bool = false
     )
+    end
+
+    # Marks it to install.
+    #
+    # This will mark to install the **packages** and the **dependencies**
+    def mark_install(ctx : Script)
+      # add packages
+      @install.each do |i|
+        i.mark_install ctx
+      end
+
+      # add dependencies (and update)
+      mgr = Initializr::Managers::PackageManager.get ctx.packageManager
+      mgr.dependency_list += @dependencies
+      mgr.should_update = true if @update
     end
 
     # Reads data from *YAML* input, and puts it into the `Package`.
@@ -79,6 +118,8 @@ module Initializr::Schema
           to_array @categories, value.as(YAMLArray)
         when "configure"
           to_array @configure, value.as(YAMLArray)
+        when "preinstall"
+          to_array @preinstall, value.as(YAMLArray)
         when "dependencies"
           to_array @dependencies, value.as(YAMLArray)
         when "update"
@@ -145,12 +186,52 @@ module Initializr::Schema
       res
     end
 
+
+    # Marks some `Package` or `Category` objects to be installed.
+    #
+    # You should reference them with its name. Example:
+    # ```
+    # # mark "mypackage" and "default" to install
+    # root.install([
+    #   "mypackage",
+    #   "default",
+    # ])
+    # ```
+    #
+    # NOTE: if the name is in both arrays, *categories* takes
+    # precedence over the *packages*.
+    def install(input : Array(String))
+      selections = (@categories + @packages)
+      input.each do |item|
+        # check the package with the selection list
+        selections.each do |pkg|
+          if pkg.name == item
+            pkg.mark_install self
+            break
+          end
+        end
+      end
+    end
+
+    # Run all the operations.
+    #
+    # This should run the `PackageManager` to install the packages,
+    # and run the every configuration for the packages.
+    def run
+      # add dependencies
+      mgr = Initializr::Managers::PackageManager.get @packageManager
+      mgr.dependency_list += @dependencies
+
+      # install packages
+      Initializr::Managers::PackageManager.run
+    end
+
     # Builds an instance of `Script` from *YAML* input.
     #
     # ```
     # name = "file.yml"
-    # Script.read(File.open(name)) # => Script instance
-    # Script.read(File.read(name)) # => Script instance
+    # Script.read(File.open(name)) # w/ IO input
+    # Script.read(File.read(name)) # w/ string
     # ```
     def self.read(input : String | IO)
       out = Script.new

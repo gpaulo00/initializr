@@ -1,64 +1,68 @@
+require "./index"
+
 module Initializr::Managers
   # This is the base class of the **package managers**.
   #
   # Also, it provides a useful *DSL* to create and register package managers.
   class PackageManager
     @@availables = [] of PackageManager
+    property :install_list, :dependency_list, :should_update
+    getter :name, :id, :to_install, :to_update
 
+    @to_install = Proc(Array(String), Bool?).new do
+      raise "not implemented"
+    end
+    @to_update = Proc(Bool?).new do
+      raise "not implemented"
+    end
     # List of packages that will be installed
+    @install_list = [] of String
+    # List of dependencies that must be installed
+    @dependency_list = [] of String
+    # Indicates if the package manager should update its database.
     #
-    # It'll be used as a cache to batch install packages.
-    property :ilist
-    getter :managerName, :toInstall, :managerID
-
-    # Identifier of this package manager.
-    #
-    # It should be a **short** and **unique** name, because
-    # it'll be used as reference by the scripts.
-    @managerID : String? = nil
-    @managerName : String? = nil
-    @toInstall : (Array(String) -> Bool?)? = nil
-    @ilist = [] of String
+    # *i.e.*: With **APT**, it'll run `apt-get update`
+    @should_update = false
 
     # Shows all the available package managers.
     def self.availables
       @@availables
     end
 
-    # Installs the packages using all package managers.
-    def self.install
-      self.availables.each do |item|
-        item.toInstall.call(item.ilist)
+    # Get by identifier
+    def self.get(id : String): PackageManager
+      @@availables.each do |mgr|
+        return mgr if mgr.id == id
       end
+      raise "cannot found a handler for '#{id}'"
     end
 
-    # Little helper to build a `PackageManager` instance.
-    def self.build
-      PackageManager.new do |item|
-        with item yield item
+    # Run all the defined `PackageManager` instances to install the packages
+    def self.run
+      self.availables.each do |item|
+        # install dependencies
+        item.to_install.call(item.dependency_list) unless item.dependency_list.empty?
+        item.to_update.call() if item.should_update
+
+        # install packages
+        item.to_install.call(item.install_list) unless item.install_list.empty?
       end
     end
 
     # Builds a new package manager using a *DSL*.
-    def initialize
+    def initialize(@id : String, @name : String)
       @@availables.push self
       with self yield self
-      self
-    end
-
-    # Defines its name.
-    def name(name : String)
-      @managerName = name
-    end
-
-    # Defines its unique identifier.
-    def id(id : String)
-      @managerID = id
     end
 
     # Defines how to install the packages.
-    def installsWith(&block : Array(String) -> Bool?)
-      @toInstall = block
+    def installs_with(&block : Array(String) -> Bool?)
+      @to_install = block
+    end
+
+    # Defines how to update the package manager.
+    def updates_with(&block : -> Bool?)
+      @to_update = block
     end
   end
 
@@ -66,21 +70,21 @@ module Initializr::Managers
   #
   # This is commonly used in **Debian**-based Linux distributions,
   # such as *Ubuntu*, and *Linux Mint*.
-  PackageManager.build do
-    id "apt"
-    name "Debian APT"
-    installsWith do |pkg|
+  PackageManager.new("apt", "Debian APT") do |i|
+    i.installs_with do |pkg|
       puts "apt-get install #{pkg.join " "}"
+    end
+
+    i.updates_with do
+      puts "apt-get update"
     end
   end
 
   # Handles the **Ruby Gem** package manager.
   #
   # This is used to install packages for **Ruby**.
-  PackageManager.build do
-    id "gem"
-    name "Ruby Gem"
-    installsWith do |pkg|
+  PackageManager.new("gem", "Ruby Gem") do |i|
+    i.installs_with do |pkg|
       puts "gem install #{pkg.join " "}"
     end
   end
@@ -88,10 +92,8 @@ module Initializr::Managers
   # Handles the **Yarn** package manager.
   #
   # This is used to install **Node.js** packages through *yarn*.
-  PackageManager.build do
-    id "yarn"
-    name "Yarn"
-    installsWith do |pkg|
+  PackageManager.new("yarn", "Yarn") do |i|
+    i.installs_with do |pkg|
       puts "yarn global add #{pkg.join " "}"
     end
   end

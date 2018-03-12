@@ -2,7 +2,7 @@ require "colorize"
 require "admiral"
 require "./index"
 require "./schema"
-require "./managers/index"
+require "./managers/package"
 require "./formatters/cli"
 
 # It is the *command-line interface* to **initializr**.
@@ -37,6 +37,18 @@ class Initializr::CLI < Admiral::Command
       formatter.packages
     when "categories"
       formatter.categories
+    when "install"
+      packages = ARGV[ARGV.index("install").as(Int32) + 1..-1]
+      if packages.empty?
+        # install defaults
+        root.install ["default"]
+      else
+        root.install packages
+      end
+
+      # execute
+      # TODO: ask for confirmation
+      root.run
     end
   end
 end
