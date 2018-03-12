@@ -91,14 +91,13 @@ module Initializr::Schema
   # Describes the complete *instruction set* of a **installer file**.
   struct Script
     include YAMLHelper
-    getter version, author, system, dependencies, packages
+    getter author, system, dependencies, packages, categories, packageManager
 
     @dependencies = [] of String
     @categories = [] of Category
     @packages = [] of Package
 
     def initialize(
-      @version : String? = nil,
       @author : String? = nil,
       @system : String? = nil,
       @packageManager : String = "apt"
@@ -110,8 +109,6 @@ module Initializr::Schema
       parse = YAML.parse(input).raw
       parse.as(YAMLHash).each do |key, value|
         case key.as(String)
-        when "version"
-          @version = value.as(String)
         when "author"
           @author = value.as(String)
         when "system"
@@ -132,38 +129,6 @@ module Initializr::Schema
             @packages.push pkg
           end
         end
-      end
-
-      @categories.uniq!
-    end
-
-    # Print info about this script
-    def print
-      puts "ver.:\t#{@version}" unless @version.nil?
-      puts "author:\t#{@author}" unless @author.nil?
-      puts "system:\t#{@system}" unless @system.nil?
-      puts ""
-    end
-
-    # Print the list of packages written in the script
-    def print_packages
-      print_list(@packages.map do |pkg|
-        "#{pkg.name}\t- #{pkg.description}"
-      end)
-    end
-
-    # Print the list of categories written in the script
-    def print_categories
-      print_list(@categories.map do |i|
-        "#{i.name}\t [#{i.packages.join ", "}]"
-      end)
-    end
-
-    # Prints a list of items
-    def print_list(list : Array(T)) forall T
-      total = list.size.to_s.size
-      list.each_with_index do |item, i|
-        puts "#{(i + 1).to_s.rjust(total, '0')}) #{item}"
       end
     end
 
