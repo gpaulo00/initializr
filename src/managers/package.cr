@@ -1,4 +1,4 @@
-module Managers
+module Initializr::Managers
   # This is the base class of the **package managers**.
   #
   # Also, it provides a useful *DSL* to create and register package managers.

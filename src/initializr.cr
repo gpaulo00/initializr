@@ -1,11 +1,9 @@
 require "admiral"
+require "./index"
 require "./schema"
 require "./managers/index"
 
 module Initializr
-  Name    = "initializr"
-  Version = "0.1.0"
-
   class CLI < Admiral::Command
     define_version Version
     define_help description: "configure your system with a single command"
@@ -24,7 +22,7 @@ module Initializr
       unless File.exists? file
         raise "cannot found the script '#{file}'"
       end
-      root = Script.read(File.open(file))
+      root = Initializr::Schema::Script.read(File.open(file))
       puts "\nscript metadata:"
       root.print
 
