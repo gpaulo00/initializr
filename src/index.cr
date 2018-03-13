@@ -1,17 +1,16 @@
-require "./runner"
+require "./runners"
+require "./managers/index"
 
-# Main module of **initializr**.
-#
-# Contains all the definitions used by this project.
+# The Initializr module is the root of this library and
+# contains all its code.
 module Initializr
   Name    = "initializr"
   Version = "0.2.0"
 
+  # The Context class is a *dependency injection container*.
   class Context
-    getter :runner
-    @runner : Initializr::BaseRunner = Initializr::ShellRunner.new
-
-    def initialize
-    end
+    getter runner, managers
+    @runner : Initializr::Runners::IRunner = Initializr::Runners::ShellRunner.new
+    @managers : Initializr::Managers::IManagersList = Initializr::Managers::ManagersList.new
   end
 end

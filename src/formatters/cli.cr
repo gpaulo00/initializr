@@ -1,10 +1,9 @@
 require "colorize"
 require "./index"
-require "../schema"
 
 module Initializr::Formatters
   # It is the default formatter, and is designed to have output to *cli*.
-  class CLI < BaseFormatter
+  class CLI < IFormatter
     def metadata
       puts "script info:".colorize(:green).mode(:bold)
       puts "#{"author".colorize(:yellow)}:\t#{@root.author}"

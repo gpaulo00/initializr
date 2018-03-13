@@ -1,9 +1,7 @@
 require "yaml"
 require "../index"
-require "./managers/package"
-require "./runner"
 
-# This *namespace* defines the **initializr** schema.
+# The Schema module defines the schema that the scripts should have.
 #
 # It's used to build a workable copy in memory of the scripts.
 module Initializr::Schema
@@ -42,9 +40,9 @@ module Initializr::Schema
 
   # Describes an **installable** package.
   #
-  # This object contains the *package*, and which `PackageManager` should handle it.
+  # This object contains the *package*, and which `IPackageManager` should handle it.
   struct Installable
-    getter name, manager
+    getter app, name, manager
 
     # Marks it to install.
     #
@@ -52,11 +50,12 @@ module Initializr::Schema
     # single packages.
     def mark_install(ctx : Script)
       name = (manager.nil? ? ctx.packageManager : @manager).as(String)
-      mgr = Initializr::Managers::PackageManager.get name
+      mgr = @app.managers.get name
       mgr.install_list.push @name
     end
 
     def initialize(
+      @app : Initializr::Context,
       @name : String,
       @manager : String? = nil
     )
@@ -66,7 +65,7 @@ module Initializr::Schema
   # Describes a *instruction set* for a single **package**.
   struct Package
     include YAMLHelper
-    getter ctx, name, description, dependencies, install, configure, update, categories
+    getter app, name, description, dependencies, install, configure, update, categories
 
     @categories = [] of String
     @dependencies = [] of String
@@ -75,7 +74,7 @@ module Initializr::Schema
     @preinstall = [] of String
 
     def initialize(
-      @ctx : Initializr::Context,
+      @app : Initializr::Context,
       @name : String,
       @description : String? = nil,
       @update : Bool = false
@@ -92,13 +91,13 @@ module Initializr::Schema
       end
 
       # add dependencies (and update)
-      mgr = Initializr::Managers::PackageManager.get ctx.packageManager
+      mgr = @app.managers.get ctx.packageManager
       mgr.dependency_list += @dependencies
       mgr.should_update = true if @update
 
       # add configurations
-      @ctx.runner.preconfigs += @preinstall
-      @ctx.runner.configs += @configure
+      @app.runner.preconfigs += @preinstall
+      @app.runner.configs += @configure
     end
 
     # Reads data from *YAML* input, and puts it into the `Package`.
@@ -112,12 +111,12 @@ module Initializr::Schema
           when Hash(YAML::Type, YAML::Type)
             value.each do |mgr, pkgs|
               pkgs.as(YAMLArray).each do |pkg|
-                @install.push(Installable.new pkg.as(String), mgr.as(String))
+                @install.push(Installable.new @app, pkg.as(String), mgr.as(String))
               end
             end
           when Array(YAML::Type)
             value.each do |pkg|
-              @install.push(Installable.new pkg.as(String))
+              @install.push(Installable.new @app, pkg.as(String))
             end
           end
         when "categories"
@@ -135,17 +134,17 @@ module Initializr::Schema
     end
   end
 
-  # Describes the complete *instruction set* of a **installer file**.
+  # Describes the complete *instruction set* of a script.
   struct Script
     include YAMLHelper
-    getter ctx, author, system, dependencies, packages, categories, packageManager
+    getter app, author, system, dependencies, packages, categories, packageManager
 
     @dependencies = [] of String
     @categories = [] of Category
     @packages = [] of Package
 
     def initialize(
-      @ctx : Initializr::Context,
+      @app : Initializr::Context,
       @author : String? = nil,
       @system : String? = nil,
       @packageManager : String = "apt"
@@ -168,7 +167,7 @@ module Initializr::Schema
         when "packages"
           # package list
           value.as(YAMLHash).each do |name, content|
-            pkg = Package.new @ctx, name.as(String)
+            pkg = Package.new @app, name.as(String)
             pkg.read content
             pkg.categories.each do |category|
               get_category(category).packages << pkg.name
@@ -225,24 +224,24 @@ module Initializr::Schema
     # and run the every configuration for the packages.
     def run
       # add dependencies
-      mgr = Initializr::Managers::PackageManager.get @packageManager
+      mgr = @app.managers.get @packageManager
       mgr.dependency_list += @dependencies
 
       # preconfiguration, install & configuration
-      @ctx.runner.preconfigure
-      Initializr::Managers::PackageManager.run
-      @ctx.runner.configure
+      @app.runner.preconfigure
+      @app.managers.execute
+      @app.runner.configure
     end
 
     # Builds an instance of `Script` from *YAML* input.
     #
     # ```
     # name = "file.yml"
-    # Script.read(ctx, File.open(name)) # w/ IO input
-    # Script.read(ctx, File.read(name)) # w/ string
+    # Script.read(app, File.open(name)) # w/ IO input
+    # Script.read(app, File.read(name)) # w/ string
     # ```
-    def self.read(ctx : Initializr::Context, input : String | IO)
-      out = Script.new ctx
+    def self.read(app : Initializr::Context, input : String | IO)
+      out = Script.new app
       out.read(input)
       out
     end
