@@ -9,10 +9,11 @@ module Initializr::Formatters
       puts "script info:".colorize(:green).mode(:bold)
       puts "#{"author".colorize(:yellow)}:\t#{@root.author}"
       puts "#{"system".colorize(:yellow)}:\t#{@root.system}"
+      puts
     end
 
     def packages
-      puts "\npackages:".colorize(:green).mode(:bold)
+      puts "packages:".colorize(:green).mode(:bold)
       res = @root.packages.map do |i|
         "#{i.name.colorize(:blue)}\t- #{i.description}"
       end
@@ -20,9 +21,9 @@ module Initializr::Formatters
     end
 
     def categories
-      puts "\ncategories:".colorize(:green).mode(:bold)
+      puts "categories:".colorize(:green).mode(:bold)
       res = @root.categories.map do |i|
-         "#{i.name.colorize(:blue)}\t [#{i.packages.join ", "}]"
+        "#{i.name.colorize(:blue)}\t [#{i.packages.join ", "}]"
       end
       print_array res
     end

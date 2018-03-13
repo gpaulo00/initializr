@@ -72,7 +72,7 @@ module Initializr::Managers
   # such as *Ubuntu*, and *Linux Mint*.
   PackageManager.new("apt", "Debian APT") do |i|
     i.installs_with do |pkg|
-      puts "apt-get install #{pkg.join " "}"
+      puts "apt-get install -y #{pkg.join " "}"
     end
 
     i.updates_with do

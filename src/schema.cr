@@ -1,6 +1,7 @@
 require "yaml"
 require "../index"
 require "./managers/package"
+require "./configurers/shell"
 
 # This *namespace* defines the **initializr** schema.
 #
@@ -93,6 +94,11 @@ module Initializr::Schema
       mgr = Initializr::Managers::PackageManager.get ctx.packageManager
       mgr.dependency_list += @dependencies
       mgr.should_update = true if @update
+
+      # add configurations
+      cfg = Initializr::Configurers::Shell
+      cfg.preconfigs += @preinstall
+      cfg.configs += @configure
     end
 
     # Reads data from *YAML* input, and puts it into the `Package`.
@@ -222,8 +228,15 @@ module Initializr::Schema
       mgr = Initializr::Managers::PackageManager.get @packageManager
       mgr.dependency_list += @dependencies
 
+      # preconfiguration
+      cfg = Initializr::Configurers::Shell
+      cfg.preconfigure
+
       # install packages
       Initializr::Managers::PackageManager.run
+
+      # configure
+      cfg.configure
     end
 
     # Builds an instance of `Script` from *YAML* input.
