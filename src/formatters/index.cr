@@ -17,6 +17,9 @@ module Initializr::Formatters
     abstract def packages
     # Gets a formatted list of categories.
     abstract def categories
+
+    # Asks for confirmation
+    abstract def confirm(&block : -> Nil): Bool
   end
 end
 
