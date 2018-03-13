@@ -1,6 +1,9 @@
 
 # default crystal
-/doc/
+/docs/
 /lib/
 /bin/
 /.shards/
+
+# other stuff
+tags
