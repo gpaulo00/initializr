@@ -66,7 +66,7 @@ module Initializr::Schema
   # Describes a *instruction set* for a single **package**.
   struct Package
     include YAMLHelper
-    getter name, description, dependencies, install, configure, update, categories
+    getter ctx, name, description, dependencies, install, configure, update, categories
 
     @categories = [] of String
     @dependencies = [] of String
@@ -75,6 +75,7 @@ module Initializr::Schema
     @preinstall = [] of String
 
     def initialize(
+      @ctx : Initializr::Context,
       @name : String,
       @description : String? = nil,
       @update : Bool = false
@@ -96,9 +97,8 @@ module Initializr::Schema
       mgr.should_update = true if @update
 
       # add configurations
-      cfg = Initializr::ShellRunner
-      cfg.preconfigs += @preinstall
-      cfg.configs += @configure
+      @ctx.runner.preconfigs += @preinstall
+      @ctx.runner.configs += @configure
     end
 
     # Reads data from *YAML* input, and puts it into the `Package`.
@@ -138,13 +138,14 @@ module Initializr::Schema
   # Describes the complete *instruction set* of a **installer file**.
   struct Script
     include YAMLHelper
-    getter author, system, dependencies, packages, categories, packageManager
+    getter ctx, author, system, dependencies, packages, categories, packageManager
 
     @dependencies = [] of String
     @categories = [] of Category
     @packages = [] of Package
 
     def initialize(
+      @ctx : Initializr::Context,
       @author : String? = nil,
       @system : String? = nil,
       @packageManager : String = "apt"
@@ -167,11 +168,10 @@ module Initializr::Schema
         when "packages"
           # package list
           value.as(YAMLHash).each do |name, content|
-            pkg = Package.new name.as(String)
+            pkg = Package.new @ctx, name.as(String)
             pkg.read content
-            pkg.categories.each do |c|
-              res = get_category c
-              res.packages.push pkg.name
+            pkg.categories.each do |category|
+              get_category(category).packages << pkg.name
             end
             @packages.push pkg
           end
@@ -228,26 +228,21 @@ module Initializr::Schema
       mgr = Initializr::Managers::PackageManager.get @packageManager
       mgr.dependency_list += @dependencies
 
-      # preconfiguration
-      cfg = Initializr::ShellRunner
-      cfg.preconfigure
-
-      # install packages
+      # preconfiguration, install & configuration
+      @ctx.runner.preconfigure
       Initializr::Managers::PackageManager.run
-
-      # configure
-      cfg.configure
+      @ctx.runner.configure
     end
 
     # Builds an instance of `Script` from *YAML* input.
     #
     # ```
     # name = "file.yml"
-    # Script.read(File.open(name)) # w/ IO input
-    # Script.read(File.read(name)) # w/ string
+    # Script.read(ctx, File.open(name)) # w/ IO input
+    # Script.read(ctx, File.read(name)) # w/ string
     # ```
-    def self.read(input : String | IO)
-      out = Script.new
+    def self.read(ctx : Initializr::Context, input : String | IO)
+      out = Script.new ctx
       out.read(input)
       out
     end

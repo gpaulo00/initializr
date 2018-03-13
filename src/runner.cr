@@ -6,41 +6,22 @@ module Initializr
   #
   # It defines the structure that every runner should have.
   abstract class BaseRunner
-    @@configs = [] of String
-    @@preconfigs = [] of String
-
-    # Gets the configuration list
-    def self.configs
-      @@configs
-    end
-
-    # Sets the configuration lists
-    def self.configs=(input)
-      @@configs = input
-    end
-
-    # Gets the pre-install configuration list
-    def self.preconfigs
-      @@preconfigs
-    end
-
-    # Sets the pre-install configuration lists
-    def self.preconfigs=(input)
-      @@preconfigs = input
-    end
+    property :configs, :preconfigs
+    @configs = [] of String
+    @preconfigs = [] of String
 
     # Run the pre-install configurations
-    def self.preconfigure
-      to_run @@preconfigs
+    def preconfigure
+      to_run @preconfigs
     end
 
     # Run the configurations
-    def self.configure
-      to_run @@configs
+    def configure
+      to_run @configs
     end
 
     # Defines how to run the commands
-    private def self.to_run(input : Array(String))
+    private def to_run(input : Array(String))
       raise "not implemented"
     end
   end
@@ -48,7 +29,7 @@ module Initializr
   # Uses the **shell** to run configurations.
   # This is the default `BaseRunner` implementation.
   class ShellRunner < BaseRunner
-    private def self.to_run(input : Array(String))
+    private def to_run(input : Array(String))
       input.each do |i|
         puts i
       end
