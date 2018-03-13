@@ -1,12 +1,11 @@
 
-require "../index"
+require "./index"
 
-# This *namespace* contains all the **configurers** used by *initializr*.
-module Initializr::Configurers
-  # This is the base class of the **configurers**.
+module Initializr
+  # This is the base class of the **runners**.
   #
-  # It defines the structure that every configurer should have.
-  abstract class BaseConfigurer
+  # It defines the structure that every runner should have.
+  abstract class BaseRunner
     @@configs = [] of String
     @@preconfigs = [] of String
 
@@ -40,14 +39,15 @@ module Initializr::Configurers
       to_run @@configs
     end
 
+    # Defines how to run the commands
     private def self.to_run(input : Array(String))
       raise "not implemented"
     end
   end
 
   # Uses the **shell** to run configurations.
-  # This is the default `BaseConfigurer` implementation.
-  class Shell < BaseConfigurer
+  # This is the default `BaseRunner` implementation.
+  class ShellRunner < BaseRunner
     private def self.to_run(input : Array(String))
       input.each do |i|
         puts i

@@ -46,9 +46,10 @@ class Initializr::CLI < Admiral::Command
         root.install packages
       end
 
-      # execute
-      # TODO: ask for confirmation
-      root.run
+      # confirm & execute
+      formatter.confirm do
+        root.run
+      end
     end
   end
 end

@@ -1,7 +1,7 @@
 require "yaml"
 require "../index"
 require "./managers/package"
-require "./configurers/shell"
+require "./runner"
 
 # This *namespace* defines the **initializr** schema.
 #
@@ -96,7 +96,7 @@ module Initializr::Schema
       mgr.should_update = true if @update
 
       # add configurations
-      cfg = Initializr::Configurers::Shell
+      cfg = Initializr::ShellRunner
       cfg.preconfigs += @preinstall
       cfg.configs += @configure
     end
@@ -229,7 +229,7 @@ module Initializr::Schema
       mgr.dependency_list += @dependencies
 
       # preconfiguration
-      cfg = Initializr::Configurers::Shell
+      cfg = Initializr::ShellRunner
       cfg.preconfigure
 
       # install packages

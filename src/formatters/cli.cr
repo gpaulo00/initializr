@@ -28,6 +28,15 @@ module Initializr::Formatters
       print_array res
     end
 
+    def confirm(&block)
+      print "Do you want to continue? [y/N] ".colorize(:blue).mode(:bold)
+      if gets.as(String).downcase == "y"
+        block.call
+      else
+        puts "aborting process".colorize(:light_magenta)
+      end
+    end
+
     def print_array(input : Array(T)) forall T
       total = input.size.to_s.size
       input.each_with_index do |item, i|
