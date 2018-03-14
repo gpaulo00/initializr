@@ -1,4 +1,3 @@
-
 module Initializr
   # The Manages module contains all the managers implemented by *initializr*.
   #
@@ -42,10 +41,10 @@ module Initializr
       end
 
       # Defines how to install the packages
-      abstract def to_install(input : Array(String)): Bool?
+      abstract def to_install(input : Array(String)) : Bool?
 
       # Defines how to update the package manager
-      def to_update: Bool?
+      def to_update : Bool?
         raise "not implemented"
       end
     end
@@ -56,7 +55,7 @@ module Initializr
       @availables = [] of IPackageManager
 
       # Gets an instance of `IPackageManager` by its identifier.
-      def get(id : String): IPackageManager
+      def get(id : String) : IPackageManager
         @availables.each do |mgr|
           return mgr if mgr.id == id
         end

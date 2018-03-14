@@ -1,4 +1,3 @@
-
 require "../schema"
 
 module Initializr
@@ -19,7 +18,7 @@ module Initializr
       abstract def categories
 
       # Asks for confirmation
-      abstract def confirm(&block : -> Nil): Bool
+      abstract def confirm(&block : -> Nil) : Bool
     end
   end
 end

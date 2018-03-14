@@ -191,7 +191,6 @@ module Initializr::Schema
       res
     end
 
-
     # Marks some `Package` or `Category` objects to be installed.
     #
     # You should reference them with its name. Example:
