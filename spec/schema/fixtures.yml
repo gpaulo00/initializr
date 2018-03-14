@@ -1,0 +1,55 @@
+
+packages:
+  good:
+    - description: "some package"
+      dependencies:
+        - python3
+        - ruby
+      install:
+        - wget
+        - curl
+      categories:
+        - default
+      configure:
+        - echo "hello"
+      update: true
+      preinstall:
+        - echo "hello"
+    - install:
+        test:
+          - wget
+  bad:
+    - description: &int 100
+    - dependencies: &str UNKNOWN
+    - configure: *str
+    - preinstall: *str
+    - update: *str
+    - categories: *str
+    - install: *str
+
+scripts:
+  good:
+    author: "nobody"
+    system: "linux"
+    packageManager: "test"
+    dependencies:
+      - git
+      - ssh
+    packages:
+      python:
+        install:
+          - python
+        categories:
+          - default
+      mercurial:
+        install:
+          - mercurial
+        categories:
+          - vcs
+          - default
+  bad:
+    - author: *int
+    - system: *int
+    - packageManager: *int
+    - dependencies: *str
+    - packages: *str
