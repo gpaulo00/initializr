@@ -22,15 +22,13 @@ module Initializr
       end
 
       # Defines how to run the commands
-      private def to_run(input : Array(String))
-        raise "not implemented"
-      end
+      abstract def to_run(input : Array(String))
     end
 
     # Uses the **shell** to run configurations.
     # This is the default `BaseRunner` implementation.
     class ShellRunner < IRunner
-      private def to_run(input : Array(String))
+      def to_run(input : Array(String))
         input.each do |i|
           puts i
         end

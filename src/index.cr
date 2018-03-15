@@ -1,5 +1,7 @@
 require "./runners"
+require "./schema"
 require "./managers/index"
+require "./formatters/index"
 
 # The Initializr module is the root of this library and
 # contains all its code.

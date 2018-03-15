@@ -20,7 +20,6 @@ module Initializr::Schema
   # Describes a **category** of packages.
   struct Category
     getter name, packages
-    @packages = [] of String
 
     # Marks it to install.
     def mark_install(ctx : Script)
@@ -34,7 +33,10 @@ module Initializr::Schema
       end
     end
 
-    def initialize(@name : String)
+    def initialize(
+      @name : String,
+      @packages = [] of String
+    )
     end
   end
 
@@ -67,17 +69,16 @@ module Initializr::Schema
     include YAMLHelper
     getter app, name, description, dependencies, install, configure, update, categories
 
-    @categories = [] of String
-    @dependencies = [] of String
-    @install = [] of Installable
-    @configure = [] of String
-    @preinstall = [] of String
-
     def initialize(
       @app : Initializr::Context,
       @name : String,
       @description : String? = nil,
-      @update : Bool = false
+      @update : Bool = false,
+      @categories = [] of String,
+      @dependencies = [] of String,
+      @install = [] of Installable,
+      @configure = [] of String,
+      @preinstall = [] of String
     )
     end
 
@@ -118,6 +119,8 @@ module Initializr::Schema
             value.each do |pkg|
               @install.push(Installable.new @app, pkg.as(String))
             end
+          else
+            raise "Failure: cast 'install' field to Hash(YAML::Type, YAML::Type) or Array(YAML::Type) failed"
           end
         when "categories"
           to_array @categories, value.as(YAMLArray)
@@ -131,6 +134,7 @@ module Initializr::Schema
           @update = value.as(Bool)
         end
       end
+      self
     end
   end
 
@@ -139,22 +143,26 @@ module Initializr::Schema
     include YAMLHelper
     getter app, author, system, dependencies, packages, categories, packageManager
 
-    @dependencies = [] of String
-    @categories = [] of Category
-    @packages = [] of Package
-
     def initialize(
       @app : Initializr::Context,
       @author : String? = nil,
       @system : String? = nil,
-      @packageManager : String = "apt"
+      @packageManager : String = "apt",
+      @dependencies = [] of String,
+      @categories = [] of Category,
+      @packages = [] of Package
     )
     end
 
-    # Reads data from *YAML* input, and puts it into the `Script`.
+    # Reads data from a `String` or `IO` input.
     def read(input : String | IO)
-      parse = YAML.parse(input).raw
-      parse.as(YAMLHash).each do |key, value|
+      # parse and delegate
+      read(YAML.parse(input).raw)
+    end
+
+    # Reads data from *YAML* input, and puts it into the `Script`.
+    def read(input : YAML::Type)
+      input.as(YAMLHash).each do |key, value|
         case key.as(String)
         when "author"
           @author = value.as(String)
@@ -176,6 +184,7 @@ module Initializr::Schema
           end
         end
       end
+      self
     end
 
     # Gets a `Category` by its name, or creates a new one.
@@ -207,13 +216,19 @@ module Initializr::Schema
     def install(input : Array(String))
       selections = (@categories + @packages)
       input.each do |item|
+        found = false
+
         # check the package with the selection list
         selections.each do |pkg|
           if pkg.name == item
             pkg.mark_install self
+            found = true
             break
           end
         end
+
+        # raise error if not found
+        raise "cannot found #{item} in the script" unless found
       end
     end
 
@@ -230,19 +245,6 @@ module Initializr::Schema
       @app.runner.preconfigure
       @app.managers.execute
       @app.runner.configure
-    end
-
-    # Builds an instance of `Script` from *YAML* input.
-    #
-    # ```
-    # name = "file.yml"
-    # Script.read(app, File.open(name)) # w/ IO input
-    # Script.read(app, File.read(name)) # w/ string
-    # ```
-    def self.read(app : Initializr::Context, input : String | IO)
-      out = Script.new app
-      out.read(input)
-      out
     end
   end
 end

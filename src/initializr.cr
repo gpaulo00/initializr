@@ -28,7 +28,7 @@ class Initializr::CLI < Admiral::Command
     unless File.exists? file
       raise "cannot found the script '#{file}'"
     end
-    root = Initializr::Schema::Script.read(ctx, File.open(file))
+    root = Initializr::Schema::Script.new(ctx).read File.open(file)
     formatter = Initializr::Formatters::CLI.new root
     formatter.metadata
 
