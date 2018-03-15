@@ -1,9 +1,7 @@
 require "yaml"
 require "../index"
-require "./managers/package"
-require "./runner"
 
-# This *namespace* defines the **initializr** schema.
+# The Schema module defines the schema that the scripts should have.
 #
 # It's used to build a workable copy in memory of the scripts.
 module Initializr::Schema
@@ -22,10 +20,13 @@ module Initializr::Schema
   # Describes a **category** of packages.
   struct Category
     getter name, packages
-    @packages = [] of String
 
     # Marks it to install.
     def mark_install(ctx : Script)
+      # register itself
+      @app.categories << @name
+
+      # mark packages to install
       @packages.each do |i|
         ctx.packages.each do |pkg|
           if pkg.name == i
@@ -36,15 +37,19 @@ module Initializr::Schema
       end
     end
 
-    def initialize(@name : String)
+    def initialize(
+      @app : Initializr::Context,
+      @name : String,
+      @packages = [] of String
+    )
     end
   end
 
-  # Describes an **installable** package.
+  # Describes an package unit, the smallest that can be installed.
   #
-  # This object contains the *package*, and which `PackageManager` should handle it.
-  struct Installable
-    getter name, manager
+  # This object contains the *package*, and which `IPackageManager` should handle it.
+  struct Unit
+    getter app, name, manager
 
     # Marks it to install.
     #
@@ -52,11 +57,12 @@ module Initializr::Schema
     # single packages.
     def mark_install(ctx : Script)
       name = (manager.nil? ? ctx.packageManager : @manager).as(String)
-      mgr = Initializr::Managers::PackageManager.get name
+      mgr = @app.managers.get name
       mgr.install_list.push @name
     end
 
     def initialize(
+      @app : Initializr::Context,
       @name : String,
       @manager : String? = nil
     )
@@ -66,18 +72,18 @@ module Initializr::Schema
   # Describes a *instruction set* for a single **package**.
   struct Package
     include YAMLHelper
-    getter name, description, dependencies, install, configure, update, categories
-
-    @categories = [] of String
-    @dependencies = [] of String
-    @install = [] of Installable
-    @configure = [] of String
-    @preinstall = [] of String
+    getter app, name, description, dependencies, install, configure, update, categories
 
     def initialize(
+      @app : Initializr::Context,
       @name : String,
       @description : String? = nil,
-      @update : Bool = false
+      @update : Bool = false,
+      @categories = [] of String,
+      @dependencies = [] of String,
+      @install = [] of Unit,
+      @configure = [] of String,
+      @preinstall = [] of String
     )
     end
 
@@ -85,20 +91,22 @@ module Initializr::Schema
     #
     # This will mark to install the **packages** and the **dependencies**
     def mark_install(ctx : Script)
+      # register itself
+      @app.packages << @name
+
       # add packages
       @install.each do |i|
         i.mark_install ctx
       end
 
       # add dependencies (and update)
-      mgr = Initializr::Managers::PackageManager.get ctx.packageManager
+      mgr = @app.managers.get ctx.packageManager
       mgr.dependency_list += @dependencies
       mgr.should_update = true if @update
 
       # add configurations
-      cfg = Initializr::ShellRunner
-      cfg.preconfigs += @preinstall
-      cfg.configs += @configure
+      @app.runner.preconfigs += @preinstall
+      @app.runner.configs += @configure
     end
 
     # Reads data from *YAML* input, and puts it into the `Package`.
@@ -112,13 +120,15 @@ module Initializr::Schema
           when Hash(YAML::Type, YAML::Type)
             value.each do |mgr, pkgs|
               pkgs.as(YAMLArray).each do |pkg|
-                @install.push(Installable.new pkg.as(String), mgr.as(String))
+                @install.push(Unit.new @app, pkg.as(String), mgr.as(String))
               end
             end
           when Array(YAML::Type)
             value.each do |pkg|
-              @install.push(Installable.new pkg.as(String))
+              @install.push(Unit.new @app, pkg.as(String))
             end
+          else
+            raise "Failure: cast 'install' field to Hash(YAML::Type, YAML::Type) or Array(YAML::Type) failed"
           end
         when "categories"
           to_array @categories, value.as(YAMLArray)
@@ -132,29 +142,35 @@ module Initializr::Schema
           @update = value.as(Bool)
         end
       end
+      self
     end
   end
 
-  # Describes the complete *instruction set* of a **installer file**.
+  # Describes the complete *instruction set* of a script.
   struct Script
     include YAMLHelper
-    getter author, system, dependencies, packages, categories, packageManager
-
-    @dependencies = [] of String
-    @categories = [] of Category
-    @packages = [] of Package
+    getter app, author, system, dependencies, packages, categories, packageManager
 
     def initialize(
+      @app : Initializr::Context,
       @author : String? = nil,
       @system : String? = nil,
-      @packageManager : String = "apt"
+      @packageManager : String = "apt",
+      @dependencies = [] of String,
+      @categories = [] of Category,
+      @packages = [] of Package
     )
     end
 
-    # Reads data from *YAML* input, and puts it into the `Script`.
+    # Reads data from a `String` or `IO` input.
     def read(input : String | IO)
-      parse = YAML.parse(input).raw
-      parse.as(YAMLHash).each do |key, value|
+      # parse and delegate
+      read(YAML.parse(input).raw)
+    end
+
+    # Reads data from *YAML* input, and puts it into the `Script`.
+    def read(input : YAML::Type)
+      input.as(YAMLHash).each do |key, value|
         case key.as(String)
         when "author"
           @author = value.as(String)
@@ -167,16 +183,16 @@ module Initializr::Schema
         when "packages"
           # package list
           value.as(YAMLHash).each do |name, content|
-            pkg = Package.new name.as(String)
+            pkg = Package.new @app, name.as(String)
             pkg.read content
-            pkg.categories.each do |c|
-              res = get_category c
-              res.packages.push pkg.name
+            pkg.categories.each do |category|
+              get_category(category).packages << pkg.name
             end
             @packages.push pkg
           end
         end
       end
+      self
     end
 
     # Gets a `Category` by its name, or creates a new one.
@@ -187,11 +203,10 @@ module Initializr::Schema
       end
 
       # insert if not exists
-      res = Category.new name
+      res = Category.new @app, name
       @categories.push res
       res
     end
-
 
     # Marks some `Package` or `Category` objects to be installed.
     #
@@ -209,13 +224,19 @@ module Initializr::Schema
     def install(input : Array(String))
       selections = (@categories + @packages)
       input.each do |item|
+        found = false
+
         # check the package with the selection list
         selections.each do |pkg|
           if pkg.name == item
             pkg.mark_install self
+            found = true
             break
           end
         end
+
+        # raise error if not found
+        raise "cannot found #{item} in the script" unless found
       end
     end
 
@@ -225,31 +246,12 @@ module Initializr::Schema
     # and run the every configuration for the packages.
     def run
       # add dependencies
-      mgr = Initializr::Managers::PackageManager.get @packageManager
+      mgr = @app.managers.get @packageManager
       mgr.dependency_list += @dependencies
 
-      # preconfiguration
-      cfg = Initializr::ShellRunner
-      cfg.preconfigure
-
-      # install packages
-      Initializr::Managers::PackageManager.run
-
-      # configure
-      cfg.configure
-    end
-
-    # Builds an instance of `Script` from *YAML* input.
-    #
-    # ```
-    # name = "file.yml"
-    # Script.read(File.open(name)) # w/ IO input
-    # Script.read(File.read(name)) # w/ string
-    # ```
-    def self.read(input : String | IO)
-      out = Script.new
-      out.read(input)
-      out
+      # execute Runner
+      @app.managers.configure @app.runner
+      @app.runner.execute
     end
   end
 end

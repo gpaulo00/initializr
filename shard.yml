@@ -15,6 +15,8 @@ targets:
 dependencies:
   admiral:
     github: jwaldrip/admiral.cr
+  spec2:
+    github: waterlink/spec2.cr
 
 crystal: 0.24.1
 

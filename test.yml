@@ -1,0 +1,11 @@
+
+# information about the installer
+author: Gustavo Paulo <gustavo.paulo.segura@gmail.com>
+system: Ubuntu GNU/Linux
+packageManager: apt
+
+packages:
+  test:
+    description: only tests the initializr
+    configure:
+      - echo "it works!"
