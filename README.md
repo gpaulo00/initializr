@@ -21,6 +21,12 @@ To get the usage of the *command-line* tool, run this:
 initializr --help
 ```
 
+## Running test
+You can run the unit test with:
+```sh
+crystal spec
+```
+
 ## Documentation
 This project uses `crystal docs` to generate the documentation files at `docs/` folder.
 I always try to document everything, so understand it is so easy. Also, it's very young

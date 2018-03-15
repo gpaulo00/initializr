@@ -4,6 +4,9 @@ require "../src/runners"
 
 include Spec2::GlobalDSL
 
+# Documentation Reporter
+Spec2.doc
+
 # My own basic mock system
 module MyMock(T)
   getter mock = [] of T
