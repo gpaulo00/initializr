@@ -27,6 +27,10 @@ class Initializr::CLI < Admiral::Command
     short: n,
     default: false,
     long: "dry-run"
+  define_flag quiet : Bool,
+    description: "Quiet mode",
+    short: q,
+    default: false
 
   # Prints an array of data
   def print_array(input : Array(T)) forall T
@@ -38,12 +42,28 @@ class Initializr::CLI < Admiral::Command
 
   # Asks for confirmation, if needed
   def confirm(skip = false)
-    print "Do you want to continue? [y/N] ".colorize(:blue).mode(:bold) unless skip
-    if skip || gets.as(String).downcase == "y"
-      yield
-    else
-      puts "aborting process".colorize(:light_magenta)
-    end
+    print " Do you want to continue? [y/N] ".colorize(:blue).mode(:bold) unless skip
+    yield if skip || gets.as(String).downcase == "y"
+  end
+
+  # Colorizes and joins a `Array(String)`
+  def join_array(input : Array(String))
+    input.map { |i| i.colorize(:blue) }.join(", ")
+  end
+
+  # Colorizes a title
+  def title(str : String)
+    str.colorize(:green).mode(:bold)
+  end
+
+  # Colorizes a subtitle
+  def subtitle(str : String)
+    " - #{str.colorize(:yellow)}"
+  end
+
+  # Prints to screen (unless)
+  def puts(str)
+    ::puts str unless flags.quiet
   end
 
   # Runs the command-line interface
@@ -62,22 +82,22 @@ class Initializr::CLI < Admiral::Command
       raise "cannot found the script '#{file}'"
     end
     root = Initializr::Schema::Script.new(ctx).read File.open(file)
-    puts "script info:".colorize(:green).mode(:bold)
-    puts "#{"author".colorize(:yellow)}:\t#{root.author}"
-    puts "#{"system".colorize(:yellow)}:\t#{root.system}"
-    puts
+    puts title("script info:")
+    puts "#{subtitle("author")}: #{root.author}"
+    puts "#{subtitle("system")}: #{root.system}"
+    puts ""
 
     # execute commands
     case arguments.action
     when "packages", .nil?
-      puts "packages:".colorize(:green).mode(:bold)
+      puts title("packages:")
       print_array(
         root.packages.map do |i|
           "#{i.name.colorize(:blue)}\t- #{i.description}"
         end
       )
     when "categories"
-      puts "categories:".colorize(:green).mode(:bold)
+      puts title("categories:")
       print_array(
         root.categories.map do |i|
           "#{i.name.colorize(:blue)}\t [#{i.packages.join ", "}]"
@@ -93,6 +113,10 @@ class Initializr::CLI < Admiral::Command
       end
 
       # confirm & execute
+      puts title("the following will be installed:")
+      puts "#{subtitle("categories")}: #{join_array(ctx.categories)}" unless ctx.categories.empty?
+      puts "#{subtitle("packages")}: #{join_array(ctx.packages)}" unless ctx.packages.empty?
+      puts ""
       confirm flags.confirm do
         root.run
       end

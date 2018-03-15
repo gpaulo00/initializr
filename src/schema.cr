@@ -23,6 +23,10 @@ module Initializr::Schema
 
     # Marks it to install.
     def mark_install(ctx : Script)
+      # register itself
+      @app.categories << @name
+
+      # mark packages to install
       @packages.each do |i|
         ctx.packages.each do |pkg|
           if pkg.name == i
@@ -34,16 +38,17 @@ module Initializr::Schema
     end
 
     def initialize(
+      @app : Initializr::Context,
       @name : String,
       @packages = [] of String
     )
     end
   end
 
-  # Describes an **installable** package.
+  # Describes an package unit, the smallest that can be installed.
   #
   # This object contains the *package*, and which `IPackageManager` should handle it.
-  struct Installable
+  struct Unit
     getter app, name, manager
 
     # Marks it to install.
@@ -76,7 +81,7 @@ module Initializr::Schema
       @update : Bool = false,
       @categories = [] of String,
       @dependencies = [] of String,
-      @install = [] of Installable,
+      @install = [] of Unit,
       @configure = [] of String,
       @preinstall = [] of String
     )
@@ -86,6 +91,9 @@ module Initializr::Schema
     #
     # This will mark to install the **packages** and the **dependencies**
     def mark_install(ctx : Script)
+      # register itself
+      @app.packages << @name
+
       # add packages
       @install.each do |i|
         i.mark_install ctx
@@ -112,12 +120,12 @@ module Initializr::Schema
           when Hash(YAML::Type, YAML::Type)
             value.each do |mgr, pkgs|
               pkgs.as(YAMLArray).each do |pkg|
-                @install.push(Installable.new @app, pkg.as(String), mgr.as(String))
+                @install.push(Unit.new @app, pkg.as(String), mgr.as(String))
               end
             end
           when Array(YAML::Type)
             value.each do |pkg|
-              @install.push(Installable.new @app, pkg.as(String))
+              @install.push(Unit.new @app, pkg.as(String))
             end
           else
             raise "Failure: cast 'install' field to Hash(YAML::Type, YAML::Type) or Array(YAML::Type) failed"
@@ -195,7 +203,7 @@ module Initializr::Schema
       end
 
       # insert if not exists
-      res = Category.new name
+      res = Category.new @app, name
       @categories.push res
       res
     end

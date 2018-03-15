@@ -7,11 +7,16 @@ module Initializr
   # Name of the application
   NAME = "initializr"
   # Version of the application
-  VERSION = "0.2.0"
+  VERSION = "0.3.0"
 
   # The Context class is a *dependency injection container*.
   class Context
     property runner, managers
+
+    # List of categories that will be installed
+    property categories = [] of String
+    # List of packages that will be installed
+    property packages = [] of String
 
     def initialize(
       @runner : Initializr::Runners::IRunner = Initializr::Runners::ShellRunner.new,

@@ -33,7 +33,7 @@ describe Initializr::Schema::Script do
     let(name) { "my-category" }
     context "when category exists" do
       it "returns the same" do
-        c = Initializr::Schema::Category.new name
+        c = Initializr::Schema::Category.new app, name
         empty.categories << c
         expect(empty.get_category(name).hash).to eq(c.hash)
       end
