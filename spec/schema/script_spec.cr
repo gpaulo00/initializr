@@ -79,7 +79,7 @@ describe Initializr::Schema::Script do
 
       # check mocks & clear
       expect(pkg.mock).to eq(deps + packages)
-      expect(runner.mock.empty?).to be_true
+      expect(runner.mock.size).to eq(2)
       pkg.clear
       runner.clear
     end

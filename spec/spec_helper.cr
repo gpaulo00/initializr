@@ -22,9 +22,9 @@ class MockPackageManager < Initializr::Managers::IPackageManager
   id "test"
   name "mock manager"
 
-  def to_install(input : Array(String)) : Bool?
+  def to_install(input : Array(String)) : String
     @mock += input
-    nil
+    "echo #{input.join " "}"
   end
 end
 

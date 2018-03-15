@@ -22,6 +22,11 @@ class Initializr::CLI < Admiral::Command
     short: y,
     default: false,
     long: yes
+  define_flag dry : Bool,
+    description: "Only prints the commands",
+    short: n,
+    default: false,
+    long: "dry-run"
 
   # Prints an array of data
   def print_array(input : Array(T)) forall T
@@ -32,10 +37,10 @@ class Initializr::CLI < Admiral::Command
   end
 
   # Asks for confirmation, if needed
-  def confirm(skip = false, &block)
+  def confirm(skip = false)
     print "Do you want to continue? [y/N] ".colorize(:blue).mode(:bold) unless skip
     if skip || gets.as(String).downcase == "y"
-      block.call
+      yield
     else
       puts "aborting process".colorize(:light_magenta)
     end
@@ -45,6 +50,11 @@ class Initializr::CLI < Admiral::Command
   def run
     puts "#{NAME} v#{VERSION}".colorize(:cyan).mode(:bold)
     ctx = Initializr::Context.new
+
+    # dry run
+    if flags.dry
+      ctx.runner = Initializr::Runners::DryRunner.new
+    end
 
     # parse file
     file = flags.input
@@ -83,7 +93,7 @@ class Initializr::CLI < Admiral::Command
       end
 
       # confirm & execute
-      confirm(flags.confirm) do
+      confirm flags.confirm do
         root.run
       end
     else

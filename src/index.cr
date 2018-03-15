@@ -11,7 +11,7 @@ module Initializr
 
   # The Context class is a *dependency injection container*.
   class Context
-    getter runner, managers
+    property runner, managers
 
     def initialize(
       @runner : Initializr::Runners::IRunner = Initializr::Runners::ShellRunner.new,

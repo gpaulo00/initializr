@@ -18,11 +18,11 @@ module Initializr::Managers
     name "Debian APT"
 
     def to_install(pkg : Array(String))
-      puts "apt-get install -y #{pkg.join " "}"
+      "apt-get install -y #{pkg.join " "}"
     end
 
     def to_update
-      puts "apt-get update"
+      "apt-get update"
     end
   end
 
@@ -34,7 +34,7 @@ module Initializr::Managers
     name "Ruby Gem"
 
     def to_install(pkg : Array(String))
-      puts "gem install #{pkg.join " "}"
+      "gem install #{pkg.join " "}"
     end
   end
 
@@ -46,7 +46,7 @@ module Initializr::Managers
     name "Yarn"
 
     def to_install(pkg : Array(String))
-      puts "yarn global add #{pkg.join " "}"
+      "yarn global add #{pkg.join " "}"
     end
   end
 end

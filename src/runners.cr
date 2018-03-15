@@ -7,17 +7,20 @@ module Initializr
     #
     # It defines the structure that every runner should have.
     abstract class IRunner
-      property configs, preconfigs
-      @configs = [] of String
-      @preconfigs = [] of String
+      # Commands to run before the installation
+      property preconfigs = [] of String
+      # Commands that install the dependencies
+      property dependencies = [] of String
+      # Commands that install the packages
+      property managers = [] of String
+      # Commands to run after the installation
+      property configs = [] of String
 
-      # Run the pre-install configurations
-      def preconfigure
+      # Run all configurations
+      def execute
         to_run @preconfigs
-      end
-
-      # Run the configurations
-      def configure
+        to_run @dependencies
+        to_run @managers
         to_run @configs
       end
 
@@ -29,9 +32,14 @@ module Initializr
     # This is the default `BaseRunner` implementation.
     class ShellRunner < IRunner
       def to_run(input : Array(String))
-        input.each do |i|
-          puts i
-        end
+        input.each { |cmd| system cmd }
+      end
+    end
+
+    # Only prints the commands to `stdout`.
+    class DryRunner < IRunner
+      def to_run(input : Array(String))
+        input.each { |cmd| puts cmd }
       end
     end
   end

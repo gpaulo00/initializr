@@ -241,10 +241,9 @@ module Initializr::Schema
       mgr = @app.managers.get @packageManager
       mgr.dependency_list += @dependencies
 
-      # preconfiguration, install & configuration
-      @app.runner.preconfigure
-      @app.managers.execute
-      @app.runner.configure
+      # execute Runner
+      @app.managers.configure @app.runner
+      @app.runner.execute
     end
   end
 end
