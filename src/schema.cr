@@ -40,10 +40,10 @@ module Initializr::Schema
     end
   end
 
-  # Describes an **installable** package.
+  # Describes an package unit, the smallest that can be installed.
   #
   # This object contains the *package*, and which `IPackageManager` should handle it.
-  struct Installable
+  struct Unit
     getter app, name, manager
 
     # Marks it to install.
@@ -76,7 +76,7 @@ module Initializr::Schema
       @update : Bool = false,
       @categories = [] of String,
       @dependencies = [] of String,
-      @install = [] of Installable,
+      @install = [] of Unit,
       @configure = [] of String,
       @preinstall = [] of String
     )
@@ -112,12 +112,12 @@ module Initializr::Schema
           when Hash(YAML::Type, YAML::Type)
             value.each do |mgr, pkgs|
               pkgs.as(YAMLArray).each do |pkg|
-                @install.push(Installable.new @app, pkg.as(String), mgr.as(String))
+                @install.push(Unit.new @app, pkg.as(String), mgr.as(String))
               end
             end
           when Array(YAML::Type)
             value.each do |pkg|
-              @install.push(Installable.new @app, pkg.as(String))
+              @install.push(Unit.new @app, pkg.as(String))
             end
           else
             raise "Failure: cast 'install' field to Hash(YAML::Type, YAML::Type) or Array(YAML::Type) failed"

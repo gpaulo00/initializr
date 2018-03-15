@@ -5,7 +5,7 @@ describe Initializr::Schema::Category do
   let(mgr) { MockPackageManager.new }
   let(app) { Initializr::Context.new(MockRunner.new, MockManagersList.new(mgr)) }
   let(name) { "my-package" }
-  let(unit) { Initializr::Schema::Installable.new app, name }
+  let(unit) { Initializr::Schema::Unit.new app, name }
   let(pkg) { Initializr::Schema::Package.new app, name, install: [unit] }
 
   let!(ctx) { Initializr::Schema::Script.new app, packageManager: "test" }
