@@ -3,14 +3,13 @@ require "admiral"
 require "./index"
 require "./schema"
 require "./managers/package"
-require "./formatters/cli"
 
 # It is the *command-line interface* to **initializr**.
 #
 # This is built on top of **admiral** DSL, and should be
 # managed within a *shell*.
 class Initializr::CLI < Admiral::Command
-  define_version Version
+  define_version VERSION
   define_help description: "configure your system with a single command"
   define_argument action : String,
     description: "The action to execute"
@@ -18,9 +17,33 @@ class Initializr::CLI < Admiral::Command
     description: "The YAML configuration file",
     short: i,
     required: true
+  define_flag confirm : Bool,
+    description: "Skips confirmation messages",
+    short: y,
+    default: false,
+    long: yes
 
+  # Prints an array of data
+  def print_array(input : Array(T)) forall T
+    total = input.size.to_s.size
+    input.each_with_index do |item, i|
+      puts "#{(i + 1).to_s.rjust(total, '0')}) #{item}"
+    end
+  end
+
+  # Asks for confirmation, if needed
+  def confirm(skip = false, &block)
+    print "Do you want to continue? [y/N] ".colorize(:blue).mode(:bold) unless skip
+    if skip || gets.as(String).downcase == "y"
+      block.call
+    else
+      puts "aborting process".colorize(:light_magenta)
+    end
+  end
+
+  # Runs the command-line interface
   def run
-    puts "#{Name} v#{Version}".colorize(:cyan).mode(:bold)
+    puts "#{NAME} v#{VERSION}".colorize(:cyan).mode(:bold)
     ctx = Initializr::Context.new
 
     # parse file
@@ -29,15 +52,27 @@ class Initializr::CLI < Admiral::Command
       raise "cannot found the script '#{file}'"
     end
     root = Initializr::Schema::Script.new(ctx).read File.open(file)
-    formatter = Initializr::Formatters::CLI.new root
-    formatter.metadata
+    puts "script info:".colorize(:green).mode(:bold)
+    puts "#{"author".colorize(:yellow)}:\t#{root.author}"
+    puts "#{"system".colorize(:yellow)}:\t#{root.system}"
+    puts
 
     # execute commands
     case arguments.action
     when "packages", .nil?
-      formatter.packages
+      puts "packages:".colorize(:green).mode(:bold)
+      print_array(
+        root.packages.map do |i|
+          "#{i.name.colorize(:blue)}\t- #{i.description}"
+        end
+      )
     when "categories"
-      formatter.categories
+      puts "categories:".colorize(:green).mode(:bold)
+      print_array(
+        root.categories.map do |i|
+          "#{i.name.colorize(:blue)}\t [#{i.packages.join ", "}]"
+        end
+      )
     when "install"
       packages = ARGV[ARGV.index("install").as(Int32) + 1..-1]
       if packages.empty?
@@ -48,9 +83,10 @@ class Initializr::CLI < Admiral::Command
       end
 
       # confirm & execute
-      formatter.confirm do
+      confirm(flags.confirm) do
         root.run
       end
+    else
     end
   end
 end

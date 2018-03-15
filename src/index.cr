@@ -1,13 +1,13 @@
 require "./runners"
-require "./schema"
 require "./managers/index"
-require "./formatters/index"
 
 # The Initializr module is the root of this library and
 # contains all its code.
 module Initializr
-  Name    = "initializr"
-  Version = "0.2.0"
+  # Name of the application
+  NAME = "initializr"
+  # Version of the application
+  VERSION = "0.2.0"
 
   # The Context class is a *dependency injection container*.
   class Context
