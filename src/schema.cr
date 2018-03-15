@@ -23,6 +23,10 @@ module Initializr::Schema
 
     # Marks it to install.
     def mark_install(ctx : Script)
+      # register itself
+      @app.categories << @name
+
+      # mark packages to install
       @packages.each do |i|
         ctx.packages.each do |pkg|
           if pkg.name == i
@@ -34,6 +38,7 @@ module Initializr::Schema
     end
 
     def initialize(
+      @app : Initializr::Context,
       @name : String,
       @packages = [] of String
     )
@@ -86,6 +91,9 @@ module Initializr::Schema
     #
     # This will mark to install the **packages** and the **dependencies**
     def mark_install(ctx : Script)
+      # register itself
+      @app.packages << @name
+
       # add packages
       @install.each do |i|
         i.mark_install ctx
@@ -195,7 +203,7 @@ module Initializr::Schema
       end
 
       # insert if not exists
-      res = Category.new name
+      res = Category.new @app, name
       @categories.push res
       res
     end

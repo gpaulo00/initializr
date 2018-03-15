@@ -9,7 +9,7 @@ describe Initializr::Schema::Category do
   let(pkg) { Initializr::Schema::Package.new app, name, install: [unit] }
 
   let!(ctx) { Initializr::Schema::Script.new app, packageManager: "test" }
-  subject { Initializr::Schema::Category.new "my-category", packages: [name] }
+  subject { Initializr::Schema::Category.new app, "my-category", packages: [name] }
 
   context "when package exists" do
     it "can be installed" do
