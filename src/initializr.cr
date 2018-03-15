@@ -27,6 +27,10 @@ class Initializr::CLI < Admiral::Command
     short: n,
     default: false,
     long: "dry-run"
+  define_flag quiet : Bool,
+    description: "Quiet mode",
+    short: q,
+    default: false
 
   # Prints an array of data
   def print_array(input : Array(T)) forall T
@@ -57,6 +61,11 @@ class Initializr::CLI < Admiral::Command
     " - #{str.colorize(:yellow)}"
   end
 
+  # Prints to screen (unless)
+  def puts(str)
+    ::puts str unless flags.quiet
+  end
+
   # Runs the command-line interface
   def run
     puts "#{NAME} v#{VERSION}".colorize(:cyan).mode(:bold)
@@ -76,7 +85,7 @@ class Initializr::CLI < Admiral::Command
     puts title("script info:")
     puts "#{subtitle("author")}: #{root.author}"
     puts "#{subtitle("system")}: #{root.system}"
-    puts
+    puts ""
 
     # execute commands
     case arguments.action
@@ -107,7 +116,7 @@ class Initializr::CLI < Admiral::Command
       puts title("the following will be installed:")
       puts "#{subtitle("categories")}: #{join_array(ctx.categories)}" unless ctx.categories.empty?
       puts "#{subtitle("packages")}: #{join_array(ctx.packages)}" unless ctx.packages.empty?
-      puts
+      puts ""
       confirm flags.confirm do
         root.run
       end
